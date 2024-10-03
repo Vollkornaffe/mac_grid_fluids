@@ -9,6 +9,8 @@ use render::{Graphics, Instance};
 mod render;
 mod shader;
 
+const SCREEN_SIZE: u32 = 10;
+
 fn main() {
     let sdl = sdl2::init().unwrap();
     let video = sdl.video().unwrap();

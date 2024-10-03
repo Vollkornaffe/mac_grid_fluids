@@ -3,10 +3,8 @@ use posh::{gl, sl, Block, BlockDom, Gl, Sl, VsInterface, VsInterfaceDom};
 use crate::{
     arrow_positions, instances,
     shader::{fragment_shader, vertex_shader},
+    SCREEN_SIZE,
 };
-
-const WIDTH: u32 = 1024;
-const HEIGHT: u32 = 768;
 
 #[derive(Clone, Copy, Block)]
 #[repr(C)]
@@ -72,19 +70,16 @@ impl Graphics {
 impl Default for Camera<Gl> {
     fn default() -> Self {
         Self {
-            world_to_view: glam::Mat4::look_at_rh(
-                glam::Vec3::new(0., 0., 20.),
-                glam::Vec3::ZERO,
-                glam::Vec3::Y,
-            )
-            .into(),
-            view_to_screen: glam::Mat4::perspective_rh_gl(
-                std::f32::consts::PI / 2.0,
-                WIDTH as f32 / HEIGHT as f32,
-                1.0,
-                500.0,
-            )
-            .into(),
+            world_to_view: glam::Mat4::IDENTITY.into(),
+            view_to_screen: {
+                let left: f32 = -(SCREEN_SIZE as f32);
+                let right: f32 = SCREEN_SIZE as f32;
+                let bottom: f32 = -(SCREEN_SIZE as f32);
+                let top: f32 = SCREEN_SIZE as f32;
+                let near: f32 = -1.;
+                let far: f32 = 1.;
+                glam::Mat4::orthographic_rh_gl(left, right, bottom, top, near, far).into()
+            },
         }
     }
 }
