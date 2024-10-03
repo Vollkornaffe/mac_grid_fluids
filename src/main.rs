@@ -65,8 +65,8 @@ fn instances(_time: f32) -> Vec<Instance<Gl>> {
         .collect()
 }
 
-fn teapot_positions() -> Vec<gl::Vec3> {
-    let file = File::open("arrow.csv").expect("Could not find teapot.csv");
+fn arrow_positions() -> Vec<gl::Vec3> {
+    let file = File::open("arrow.csv").expect("Could not find arrow.csv");
     BufReader::new(file)
         .lines()
         .map(|line| {

@@ -1,9 +1,8 @@
 use posh::{gl, sl, Block, BlockDom, Gl, Sl, VsInterface, VsInterfaceDom};
 
 use crate::{
-    instances,
+    arrow_positions, instances,
     shader::{fragment_shader, vertex_shader},
-    teapot_positions,
 };
 
 const WIDTH: u32 = 1024;
@@ -46,7 +45,7 @@ impl Graphics {
             program: gl.create_program(vertex_shader, fragment_shader)?,
             camera: gl.create_uniform_buffer(Camera::default(), StaticDraw)?,
             instances: gl.create_vertex_buffer(&instances(0.0), StaticDraw)?,
-            teapot: gl.create_vertex_buffer(&teapot_positions(), StaticDraw)?,
+            teapot: gl.create_vertex_buffer(&arrow_positions(), StaticDraw)?,
         })
     }
 
