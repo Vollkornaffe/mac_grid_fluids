@@ -49,17 +49,15 @@ fn main() {
 fn instances(_time: f32) -> Vec<Instance<Gl>> {
     (0..10)
         .flat_map(|x| {
-            (0..10).flat_map(move |y| {
-                (0..10).map(move |z| {
-                    let world_pos = glam::uvec3(x, y, z).as_vec3() * 10.;
-                    let model_to_view = glam::Mat4::from_translation(world_pos);
-                    let color = glam::uvec3(x, 10 - y, z).as_vec3() / 10.0;
+            (0..10).map(move |y| {
+                let world_pos = glam::uvec3(x, y, 0).as_vec3();
+                let model_to_view = glam::Mat4::from_translation(world_pos);
+                let color = glam::uvec3(x, 10 - y, 0).as_vec3() / 10.0;
 
-                    Instance {
-                        model_to_view: model_to_view.into(),
-                        color: color.into(),
-                    }
-                })
+                Instance {
+                    model_to_view: model_to_view.into(),
+                    color: color.into(),
+                }
             })
         })
         .collect()

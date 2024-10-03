@@ -73,9 +73,9 @@ impl Default for Camera<Gl> {
     fn default() -> Self {
         Self {
             world_to_view: glam::Mat4::look_at_rh(
-                glam::Vec3::new(-20.0, -20.0, -20.0),
+                glam::Vec3::new(0., 0., 20.),
                 glam::Vec3::ZERO,
-                glam::Vec3::NEG_Y,
+                glam::Vec3::Y,
             )
             .into(),
             view_to_screen: glam::Mat4::perspective_rh_gl(
