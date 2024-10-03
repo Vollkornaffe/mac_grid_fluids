@@ -9,8 +9,8 @@ use render::{Graphics, Instance};
 mod render;
 mod shader;
 
-const SCREEN_SIZE: u32 = 10;
-const PIXEL_PER_UNIT: u32 = 100;
+const SCREEN_SIZE: u32 = 100;
+const PIXEL_PER_UNIT: u32 = 10;
 const MARGIN: f32 = 0.2;
 
 fn main() {
@@ -54,7 +54,7 @@ fn main() {
     }
 }
 
-const GRID_SIZE: usize = 10;
+const GRID_SIZE: usize = 25;
 
 fn instances(_time: f32) -> Vec<Instance<Gl>> {
     (0..=GRID_SIZE)
