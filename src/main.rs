@@ -53,13 +53,17 @@ fn main() {
     }
 }
 
+const GRID_SIZE: usize = 10;
+
 fn instances(_time: f32) -> Vec<Instance<Gl>> {
-    (0..10)
+    (0..GRID_SIZE)
         .flat_map(|x| {
-            (0..10).map(move |y| {
-                let world_pos = glam::uvec3(x, y, 0).as_vec3();
+            (0..GRID_SIZE).map(move |y| {
+                let x = x as f32 / GRID_SIZE as f32;
+                let y = y as f32 / GRID_SIZE as f32;
+                let world_pos = glam::vec3(x, y, 0.) * SCREEN_SIZE as f32 * 0.9;
                 let model_to_view = glam::Mat4::from_translation(world_pos);
-                let color = glam::uvec3(x, 10 - y, 0).as_vec3() / 10.0;
+                let color = glam::vec3(x, y, 0.);
 
                 Instance {
                     model_to_view: model_to_view.into(),
