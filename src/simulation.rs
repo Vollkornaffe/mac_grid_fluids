@@ -1,4 +1,4 @@
-use glam::Vec2;
+use glam::{Mat2, Vec2};
 
 use crate::{GRID_SIZE, MARGIN, SCREEN_SIZE};
 
@@ -29,5 +29,9 @@ impl Simulation {
         }
     }
 
-    pub fn step(&mut self) {}
+    pub fn step(&mut self) {
+        for cell in &mut self.cells {
+            cell.velocity = Mat2::from_angle(0.001) * cell.velocity;
+        }
+    }
 }
