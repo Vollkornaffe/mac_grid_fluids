@@ -10,6 +10,7 @@ mod render;
 mod shader;
 
 const SCREEN_SIZE: u32 = 10;
+const PIXEL_PER_UNIT: u32 = 100;
 
 fn main() {
     let sdl = sdl2::init().unwrap();
@@ -20,7 +21,11 @@ fn main() {
     gl_attr.set_context_version(3, 0);
 
     let window = video
-        .window("Teapot instancing", 1024, 768)
+        .window(
+            "MAC Grid Fluid",
+            SCREEN_SIZE * PIXEL_PER_UNIT,
+            SCREEN_SIZE * PIXEL_PER_UNIT,
+        )
         .opengl()
         .build()
         .unwrap();
