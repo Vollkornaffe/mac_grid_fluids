@@ -34,7 +34,7 @@ pub struct Graphics {
     camera: gl::UniformBuffer<Camera<Gl>>,
 
     instances: gl::VertexBuffer<Instance<Gl>>,
-    teapot: gl::VertexBuffer<gl::Vec3>,
+    arrow: gl::VertexBuffer<gl::Vec3>,
 }
 
 impl Graphics {
@@ -44,8 +44,8 @@ impl Graphics {
         Ok(Self {
             program: gl.create_program(vertex_shader, fragment_shader)?,
             camera: gl.create_uniform_buffer(Camera::default(), StaticDraw)?,
-            instances: gl.create_vertex_buffer(&instances(0.0), StaticDraw)?,
-            teapot: gl.create_vertex_buffer(&arrow_positions(), StaticDraw)?,
+            instances: gl.create_vertex_buffer(&instances(0.0), StreamDraw)?,
+            arrow: gl.create_vertex_buffer(&arrow_positions(), StaticDraw)?,
         })
     }
 
@@ -61,7 +61,7 @@ impl Graphics {
             .draw(
                 gl::VertexSpec::new(gl::PrimitiveMode::Triangles).with_vertex_data(VsInput {
                     instance: self.instances.as_binding().with_instancing(),
-                    model_pos: self.teapot.as_binding(),
+                    model_pos: self.arrow.as_binding(),
                 }),
             )?;
 
