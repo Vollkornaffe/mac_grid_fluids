@@ -3,11 +3,14 @@ use std::{
     io::{BufRead, BufReader},
 };
 
+use glam::{vec4, Vec3, Vec4};
 use posh::{gl, Gl};
 use render::{Graphics, Instance};
+use simulation::Simulation;
 
 mod render;
 mod shader;
+mod simulation;
 
 const SCREEN_SIZE: u32 = 100;
 const PIXEL_PER_UNIT: u32 = 10;
@@ -36,9 +39,10 @@ fn main() {
         glow::Context::from_loader_function(|s| video.gl_get_proc_address(s) as *const _)
     };
     let gl = gl::Context::new(gl).unwrap();
-    let demo = Graphics::new(gl).unwrap();
+    let graphics = Graphics::new(gl).unwrap();
 
     let mut event_loop = sdl.event_pump().unwrap();
+    let mut simulation = Simulation::new();
 
     loop {
         for event in event_loop.poll_iter() {
@@ -49,32 +53,31 @@ fn main() {
             }
         }
 
-        demo.draw().unwrap();
+        simulation.step();
+
+        graphics.instances.set(
+            &simulation
+                .cells
+                .iter()
+                .map(|cell| Instance::<Gl> {
+                    model_to_view: glam::Mat4::from_cols(
+                        cell.velocity.extend(0.).extend(0.),
+                        vec4(-cell.velocity.y, cell.velocity.x, 0., 0.).normalize_or_zero(),
+                        Vec4::Z,
+                        cell.position.extend(0.).extend(1.),
+                    )
+                    .into(),
+                    color: Vec3::X.into(),
+                })
+                .collect::<Vec<_>>(),
+        );
+
+        graphics.draw().unwrap();
         window.gl_swap_window();
     }
 }
 
 const GRID_SIZE: usize = 25;
-
-fn instances(_time: f32) -> Vec<Instance<Gl>> {
-    (0..=GRID_SIZE)
-        .flat_map(|x| {
-            (0..=GRID_SIZE).map(move |y| {
-                let x = x as f32 / GRID_SIZE as f32;
-                let y = y as f32 / GRID_SIZE as f32;
-                let world_pos = glam::Vec2::splat(SCREEN_SIZE as f32 * MARGIN / 2.)
-                    + glam::vec2(x, y) * SCREEN_SIZE as f32 * (1. - MARGIN);
-                let model_to_view = glam::Mat4::from_translation(world_pos.extend(0.));
-                let color = glam::vec3(x, y, 0.);
-
-                Instance {
-                    model_to_view: model_to_view.into(),
-                    color: color.into(),
-                }
-            })
-        })
-        .collect()
-}
 
 fn arrow_positions() -> Vec<gl::Vec3> {
     let file = File::open("arrow.csv").expect("Could not find arrow.csv");

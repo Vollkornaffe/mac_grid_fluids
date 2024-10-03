@@ -1,7 +1,7 @@
 use posh::{gl, sl, Block, BlockDom, Gl, Sl, VsInterface, VsInterfaceDom};
 
 use crate::{
-    arrow_positions, instances,
+    arrow_positions,
     shader::{fragment_shader, vertex_shader},
     SCREEN_SIZE,
 };
@@ -31,7 +31,7 @@ pub struct Graphics {
 
     camera: gl::UniformBuffer<Camera<Gl>>,
 
-    instances: gl::VertexBuffer<Instance<Gl>>,
+    pub instances: gl::VertexBuffer<Instance<Gl>>,
     arrow: gl::VertexBuffer<gl::Vec3>,
 }
 
@@ -42,7 +42,7 @@ impl Graphics {
         Ok(Self {
             program: gl.create_program(vertex_shader, fragment_shader)?,
             camera: gl.create_uniform_buffer(Camera::default(), StaticDraw)?,
-            instances: gl.create_vertex_buffer(&instances(0.0), StreamDraw)?,
+            instances: gl.create_vertex_buffer(&[], StreamDraw)?,
             arrow: gl.create_vertex_buffer(&arrow_positions(), StaticDraw)?,
         })
     }
