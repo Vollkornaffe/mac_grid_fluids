@@ -72,9 +72,9 @@ impl Default for Camera<Gl> {
         Self {
             world_to_view: glam::Mat4::IDENTITY.into(),
             view_to_screen: {
-                let left: f32 = -(SCREEN_SIZE as f32);
+                let left: f32 = 0.;
                 let right: f32 = SCREEN_SIZE as f32;
-                let bottom: f32 = -(SCREEN_SIZE as f32);
+                let bottom: f32 = 0.;
                 let top: f32 = SCREEN_SIZE as f32;
                 let near: f32 = -1.;
                 let far: f32 = 1.;

@@ -11,6 +11,7 @@ mod shader;
 
 const SCREEN_SIZE: u32 = 10;
 const PIXEL_PER_UNIT: u32 = 100;
+const MARGIN: f32 = 0.2;
 
 fn main() {
     let sdl = sdl2::init().unwrap();
@@ -56,13 +57,14 @@ fn main() {
 const GRID_SIZE: usize = 10;
 
 fn instances(_time: f32) -> Vec<Instance<Gl>> {
-    (0..GRID_SIZE)
+    (0..=GRID_SIZE)
         .flat_map(|x| {
-            (0..GRID_SIZE).map(move |y| {
+            (0..=GRID_SIZE).map(move |y| {
                 let x = x as f32 / GRID_SIZE as f32;
                 let y = y as f32 / GRID_SIZE as f32;
-                let world_pos = glam::vec3(x, y, 0.) * SCREEN_SIZE as f32 * 0.9;
-                let model_to_view = glam::Mat4::from_translation(world_pos);
+                let world_pos = glam::Vec2::splat(SCREEN_SIZE as f32 * MARGIN / 2.)
+                    + glam::vec2(x, y) * SCREEN_SIZE as f32 * (1. - MARGIN);
+                let model_to_view = glam::Mat4::from_translation(world_pos.extend(0.));
                 let color = glam::vec3(x, y, 0.);
 
                 Instance {
