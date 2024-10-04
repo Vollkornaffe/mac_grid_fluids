@@ -9,6 +9,7 @@ pub struct Cell {
 }
 
 pub struct Simulation {
+    pub time_step: f32,
     pub cell_size: f32,
     pub dimensions: UVec2,
     pub pressures: Vec<f32>,
@@ -17,7 +18,7 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    pub fn new(dimensions: UVec2, cell_size: f32) -> Self {
+    pub fn new(dimensions: UVec2, cell_size: f32, time_step: f32) -> Self {
         assert!(dimensions.element_product() != 0);
 
         let mut rng = rand::thread_rng();
@@ -32,6 +33,7 @@ impl Simulation {
         let velocities_y = (0..velocities_y_count).map(|_| random_float()).collect();
 
         Self {
+            time_step,
             dimensions,
             cell_size,
             pressures,
@@ -154,6 +156,41 @@ impl Simulation {
         )
     }
 
-    fn advect(&mut self) {}
+    fn interpolate_velocity_with_normalized(&self, normalized: Vec2) -> Vec2 {
+        vec2(
+            self.interpolate_velocity_x(normalized),
+            self.interpolate_velocity_y(normalized),
+        )
+    }
+
+    fn advect(&mut self) {
+        let shared_self = &*self;
+        let velocities_x = (0..self.dimensions.y)
+            .flat_map(|j| {
+                (0..=self.dimensions.x).map(move |i| {
+                    let normalized = vec2(i as f32, 0.5 + j as f32);
+                    let velocity = shared_self.interpolate_velocity_with_normalized(normalized);
+                    let lookup =
+                        normalized - shared_self.time_step * velocity / shared_self.cell_size;
+                    shared_self.interpolate_velocity_with_normalized(lookup).x
+                })
+            })
+            .collect();
+        let velocities_y = (0..self.dimensions.x)
+            .flat_map(|i| {
+                (0..=shared_self.dimensions.y).map(move |j| {
+                    let normalized = vec2(0.5 + i as f32, j as f32);
+                    let velocity = shared_self.interpolate_velocity_with_normalized(normalized);
+                    let lookup =
+                        normalized - shared_self.time_step * velocity / shared_self.cell_size;
+                    shared_self.interpolate_velocity_with_normalized(lookup).y
+                })
+            })
+            .collect();
+
+        self.velocities_x = velocities_x;
+        self.velocities_y = velocities_y;
+    }
+
     fn project(&mut self) {}
 }

@@ -45,7 +45,8 @@ fn main() {
 
     let grid_dimensions = uvec2(60, 30);
     let cell_size = 20.;
-    let mut simulation = Simulation::new(grid_dimensions, cell_size);
+    let time_step = 0.5;
+    let mut simulation = Simulation::new(grid_dimensions, cell_size, time_step);
 
     let cell_offset = Vec2::splat(2. * simulation.cell_size);
     let mut cursor_cell = Cell {
