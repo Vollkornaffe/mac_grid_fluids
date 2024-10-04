@@ -3,7 +3,7 @@ use posh::{gl, sl, Block, BlockDom, Gl, Sl, VsInterface, VsInterfaceDom};
 use crate::{
     arrow_positions,
     shader::{fragment_shader, vertex_shader},
-    SCREEN_SIZE,
+    HEIGHT, WIDTH,
 };
 
 #[derive(Clone, Copy, Block)]
@@ -73,9 +73,9 @@ impl Default for Camera<Gl> {
             world_to_view: glam::Mat4::IDENTITY.into(),
             view_to_screen: {
                 let left: f32 = 0.;
-                let right: f32 = SCREEN_SIZE as f32;
+                let right: f32 = WIDTH as f32;
                 let bottom: f32 = 0.;
-                let top: f32 = SCREEN_SIZE as f32;
+                let top: f32 = HEIGHT as f32;
                 let near: f32 = -1.;
                 let far: f32 = 1.;
                 glam::Mat4::orthographic_rh_gl(left, right, bottom, top, near, far).into()

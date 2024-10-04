@@ -3,20 +3,23 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use glam::{vec4, Vec3, Vec4};
+use glam::{uvec2, vec4, Vec2, Vec3, Vec4};
 use posh::{gl, Gl};
 use render::{Graphics, Instance};
 use simulation::Simulation;
+use tracing::{info, subscriber::set_global_default};
+use tracing_subscriber::FmtSubscriber;
 
 mod render;
 mod shader;
 mod simulation;
 
-const SCREEN_SIZE: u32 = 100;
-const PIXEL_PER_UNIT: u32 = 10;
-const MARGIN: f32 = 0.2;
+const WIDTH: u32 = 1280;
+const HEIGHT: u32 = 720;
 
 fn main() {
+    set_global_default(FmtSubscriber::default()).unwrap();
+
     let sdl = sdl2::init().unwrap();
     let video = sdl.video().unwrap();
 
@@ -25,11 +28,7 @@ fn main() {
     gl_attr.set_context_version(3, 0);
 
     let window = video
-        .window(
-            "MAC Grid Fluid",
-            SCREEN_SIZE * PIXEL_PER_UNIT,
-            SCREEN_SIZE * PIXEL_PER_UNIT,
-        )
+        .window("MAC Grid Fluid", WIDTH, HEIGHT)
         .opengl()
         .build()
         .unwrap();
@@ -42,7 +41,10 @@ fn main() {
     let graphics = Graphics::new(gl).unwrap();
 
     let mut event_loop = sdl.event_pump().unwrap();
-    let mut simulation = Simulation::new();
+
+    let grid_dimensions = uvec2(60, 30);
+    let cell_size = 20.;
+    let mut simulation = Simulation::new(grid_dimensions, cell_size);
 
     loop {
         for event in event_loop.poll_iter() {
@@ -57,14 +59,16 @@ fn main() {
 
         graphics.instances.set(
             &simulation
-                .cells
-                .iter()
+                .cells()
                 .map(|cell| Instance::<Gl> {
                     model_to_view: glam::Mat4::from_cols(
-                        cell.velocity.extend(0.).extend(0.),
-                        vec4(-cell.velocity.y, cell.velocity.x, 0., 0.).normalize_or_zero(),
+                        cell.velocity.extend(0.).extend(0.) * simulation.cell_size,
+                        vec4(-cell.velocity.y, cell.velocity.x, 0., 0.).normalize_or_zero()
+                            * simulation.cell_size,
                         Vec4::Z,
-                        cell.position.extend(0.).extend(1.),
+                        (Vec2::splat(2. * simulation.cell_size) + cell.position)
+                            .extend(0.)
+                            .extend(1.),
                     )
                     .into(),
                     color: Vec3::X.into(),
@@ -76,8 +80,6 @@ fn main() {
         window.gl_swap_window();
     }
 }
-
-const GRID_SIZE: usize = 25;
 
 fn arrow_positions() -> Vec<gl::Vec3> {
     let file = File::open("arrow.csv").expect("Could not find arrow.csv");
