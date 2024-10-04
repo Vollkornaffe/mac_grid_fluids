@@ -7,8 +7,9 @@ use std::{
 use glam::{uvec2, vec4, Vec2, Vec3, Vec4};
 use posh::{gl, Gl};
 use render::{Graphics, Instance};
+use sdl2::keyboard::Keycode;
 use simulation::{Cell, Simulation};
-use tracing::subscriber::set_global_default;
+use tracing::{info, subscriber::set_global_default};
 use tracing_subscriber::FmtSubscriber;
 
 mod render;
@@ -17,6 +18,17 @@ mod simulation;
 
 const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
+
+enum VelocityMode {
+    Combined,
+    Staggered,
+}
+
+#[derive(PartialEq, Eq)]
+enum RunMode {
+    Step,
+    Play,
+}
 
 fn main() {
     set_global_default(FmtSubscriber::default()).unwrap();
@@ -45,17 +57,20 @@ fn main() {
 
     let grid_dimensions = uvec2(60, 30);
     let cell_size = 20.;
-    let time_step = 0.5;
+    let time_step = 0.1;
     let mut simulation = Simulation::new(grid_dimensions, cell_size, time_step);
 
     let cell_offset = Vec2::splat(2. * simulation.cell_size);
     let mut cursor_cell = Cell {
         position: Vec2::ZERO,
         velocity: Vec2::Y,
-        color: Vec3::Y,
+        color: Vec3::Z,
     };
+    let mut velocity_mode = VelocityMode::Combined;
+    let mut run_mode = RunMode::Step;
 
     loop {
+        let mut step = false;
         for event in event_loop.poll_iter() {
             type E = sdl2::event::Event;
 
@@ -64,6 +79,42 @@ fn main() {
                     cursor_cell.position.x = x as f32 - cell_offset.x;
                     cursor_cell.position.y = (HEIGHT as i32 - y) as f32 - cell_offset.y;
                 }
+                E::KeyDown {
+                    keycode: Some(Keycode::R),
+                    repeat: false,
+                    ..
+                } => {
+                    run_mode = RunMode::Play;
+                }
+                E::KeyDown {
+                    keycode: Some(Keycode::P),
+                    repeat: false,
+                    ..
+                } => {
+                    run_mode = RunMode::Step;
+                }
+                E::KeyDown {
+                    keycode: Some(Keycode::C),
+                    repeat: false,
+                    ..
+                } => {
+                    velocity_mode = VelocityMode::Combined;
+                }
+                E::KeyDown {
+                    keycode: Some(Keycode::S),
+                    repeat: false,
+                    ..
+                } => {
+                    velocity_mode = VelocityMode::Staggered;
+                }
+                E::KeyDown {
+                    keycode: Some(Keycode::Space),
+                    repeat: false,
+                    ..
+                } => {
+                    info!("step");
+                    step = true;
+                }
                 E::Quit { .. } => {
                     return;
                 }
@@ -71,7 +122,9 @@ fn main() {
             }
         }
 
-        simulation.step();
+        if run_mode == RunMode::Play || step {
+            simulation.step();
+        }
 
         cursor_cell.velocity = simulation.interpolate_velocity(cursor_cell.position);
 
@@ -87,9 +140,17 @@ fn main() {
             color: cell.color.into(),
         };
 
+        let mut instances = vec![cursor_cell];
+        match velocity_mode {
+            VelocityMode::Combined => instances.extend(simulation.cells()),
+            VelocityMode::Staggered => {
+                instances.extend(simulation.velocities_x());
+                instances.extend(simulation.velocities_y());
+            }
+        }
         graphics.instances.set(
-            &once(cursor_cell)
-                .chain(simulation.cells())
+            &instances
+                .into_iter()
                 .map(cell_to_instance)
                 .collect::<Vec<_>>(),
         );

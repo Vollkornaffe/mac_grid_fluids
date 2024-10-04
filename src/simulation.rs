@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use glam::{mat2, uvec2, vec2, IVec2, UVec2, Vec2, Vec3};
 use rand::Rng;
 
@@ -29,8 +31,8 @@ impl Simulation {
         let velocities_x_count = ((dimensions.x + 1) * dimensions.y) as usize;
         let velocities_y_count = (dimensions.x * (dimensions.y + 1)) as usize;
 
-        let velocities_x = (0..velocities_x_count).map(|_| random_float()).collect();
-        let velocities_y = (0..velocities_y_count).map(|_| random_float()).collect();
+        let velocities_x = vec![1.; velocities_x_count];
+        let velocities_y = vec![1.; velocities_y_count];
 
         Self {
             time_step,
@@ -40,6 +42,32 @@ impl Simulation {
             velocities_x,
             velocities_y,
         }
+    }
+
+    pub fn velocities_x(&self) -> impl Iterator<Item = Cell> + '_ {
+        self.velocities_x_iter().map(|cell| {
+            let position = (cell.as_vec2() + Vec2::Y * 0.5) * self.cell_size;
+            let velocity = vec2(self.velocities_x[self.velocities_x_idx(cell)], 0.);
+            let color = Vec3::X;
+            Cell {
+                position,
+                velocity,
+                color,
+            }
+        })
+    }
+
+    pub fn velocities_y(&self) -> impl Iterator<Item = Cell> + '_ {
+        self.velocities_y_iter().map(|cell| {
+            let position = (cell.as_vec2() + Vec2::X * 0.5) * self.cell_size;
+            let velocity = vec2(0., self.velocities_y[self.velocities_y_idx(cell)]);
+            let color = Vec3::Y;
+            Cell {
+                position,
+                velocity,
+                color,
+            }
+        })
     }
 
     pub fn cells(&self) -> impl Iterator<Item = Cell> + '_ {
@@ -58,6 +86,7 @@ impl Simulation {
     pub fn step(&mut self) {
         self.boundary();
         self.advect();
+        self.boundary();
         self.project();
     }
 
@@ -264,6 +293,30 @@ impl Simulation {
                 .collect()
         }
 
-        //let pressures = todo!();
+        let mut velocities_x = Default::default();
+        swap(&mut velocities_x, &mut self.velocities_x);
+        for (cell, velocity_x) in self.velocities_x_iter().zip(velocities_x.iter_mut()) {
+            if cell.x == 0 || cell.x == self.dimensions.x {
+                continue;
+            }
+            let pressure_gradient = (self.pressures[self.pressures_idx(cell)]
+                - self.pressures[self.pressures_idx(cell - UVec2::X)])
+                / self.cell_size;
+            *velocity_x -= self.time_step * pressure_gradient;
+        }
+        self.velocities_x = velocities_x;
+
+        let mut velocities_y = Default::default();
+        swap(&mut velocities_y, &mut self.velocities_y);
+        for (cell, velocity_y) in self.velocities_y_iter().zip(velocities_y.iter_mut()) {
+            if cell.y == 0 || cell.y == self.dimensions.y {
+                continue;
+            }
+            let pressure_gradient = (self.pressures[self.pressures_idx(cell)]
+                - self.pressures[self.pressures_idx(cell - UVec2::Y)])
+                / self.cell_size;
+            *velocity_y -= self.time_step * pressure_gradient;
+        }
+        self.velocities_y = velocities_y;
     }
 }
