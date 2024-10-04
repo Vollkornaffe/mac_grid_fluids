@@ -3,7 +3,7 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use glam::{uvec2, vec4, Vec2, Vec3, Vec4};
+use glam::{uvec2, vec2, vec4, Vec2, Vec3, Vec4};
 use posh::{gl, Gl};
 use render::{Graphics, Instance};
 use sdl2::keyboard::Keycode;
@@ -56,7 +56,7 @@ fn main() {
 
     let grid_dimensions = uvec2(60, 30);
     let cell_size = 20.;
-    let time_step = 0.1;
+    let time_step = 0.5;
     let mut simulation = Simulation::new(grid_dimensions, cell_size, time_step);
 
     let cell_offset = Vec2::splat(2. * simulation.cell_size);
@@ -74,9 +74,21 @@ fn main() {
             type E = sdl2::event::Event;
 
             match event {
-                E::MouseMotion { x, y, .. } => {
+                E::MouseMotion {
+                    mousestate,
+                    x,
+                    y,
+                    xrel,
+                    yrel,
+                    ..
+                } => {
                     cursor_cell.position.x = x as f32 - cell_offset.x;
                     cursor_cell.position.y = (HEIGHT as i32 - y) as f32 - cell_offset.y;
+                    cursor_cell.velocity = if mousestate.left() {
+                        vec2(xrel as f32, -yrel as f32)
+                    } else {
+                        Vec2::ZERO
+                    };
                 }
                 E::KeyDown {
                     keycode: Some(Keycode::R),
@@ -121,11 +133,17 @@ fn main() {
             }
         }
 
+        if run_mode == RunMode::Play {
+            simulation.interact(
+                cursor_cell.position,
+                cursor_cell.velocity.clamp(Vec2::NEG_ONE, Vec2::ONE),
+                cell_size * 3.,
+            );
+        }
+
         if run_mode == RunMode::Play || step {
             simulation.step();
         }
-
-        cursor_cell.velocity = simulation.interpolate_velocity(cursor_cell.position);
 
         let cell_to_instance = |cell: Cell| Instance::<Gl> {
             model_to_view: glam::Mat4::from_cols(

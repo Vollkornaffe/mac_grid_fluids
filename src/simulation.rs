@@ -1,6 +1,6 @@
 use std::mem::swap;
 
-use glam::{mat2, uvec2, vec2, IVec2, UVec2, Vec2, Vec3};
+use glam::{ivec2, mat2, uvec2, vec2, IVec2, UVec2, Vec2, Vec3};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Cell {
@@ -70,13 +70,25 @@ impl Simulation {
         self.cell_iter().map(|cell| {
             let position = (cell.as_vec2() + Vec2::ONE * 0.5) * self.cell_size;
             let velocity = self.interpolate_velocity(position);
-            let color = Vec3::X * self.pressures[self.pressures_idx(cell)] * 0.001;
+            let color = Vec3::X * self.pressures[self.pressures_idx(cell)] * 0.1;
             Cell {
                 position,
                 velocity,
                 color,
             }
         })
+    }
+
+    pub fn interact(&mut self, position: Vec2, velocity: Vec2, radius: f32) {
+        let steps = (radius / self.cell_size) as i32;
+        let normalized = (position / self.cell_size).floor().as_ivec2();
+        for i in -steps..=steps {
+            for j in -steps..=steps {
+                let cell = normalized + ivec2(i, j);
+                *self.velocity_x_mut(cell) += velocity.x;
+                *self.velocity_y_mut(cell) += velocity.y;
+            }
+        }
     }
 
     pub fn step(&mut self) {
@@ -112,12 +124,30 @@ impl Simulation {
         self.dimensions + UVec2::Y
     }
 
+    fn velocity_x_mut(&mut self, normalized: IVec2) -> &mut f32 {
+        let clamped = normalized
+            .max(IVec2::ZERO)
+            .as_uvec2()
+            .min(self.velocities_x_dimensions() - UVec2::ONE);
+        let idx = self.velocities_x_idx(clamped);
+        &mut self.velocities_x[idx]
+    }
+
     fn velocity_x(&self, normalized: IVec2) -> f32 {
         let clamped = normalized
             .max(IVec2::ZERO)
             .as_uvec2()
             .min(self.velocities_x_dimensions() - UVec2::ONE);
         self.velocities_x[self.velocities_x_idx(clamped)]
+    }
+
+    fn velocity_y_mut(&mut self, normalized: IVec2) -> &mut f32 {
+        let clamped = normalized
+            .max(IVec2::ZERO)
+            .as_uvec2()
+            .min(self.velocities_y_dimensions() - UVec2::ONE);
+        let idx = self.velocities_y_idx(clamped);
+        &mut self.velocities_y[idx]
     }
 
     fn velocity_y(&self, normalized: IVec2) -> f32 {
@@ -268,7 +298,7 @@ impl Simulation {
             })
             .collect();
 
-        for _ in 0..10 {
+        for _ in 0..100 {
             self.pressures = self
                 .cell_iter()
                 .map(|cell| {
