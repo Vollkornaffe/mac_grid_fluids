@@ -1,7 +1,6 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
-    iter::once,
 };
 
 use glam::{uvec2, vec4, Vec2, Vec3, Vec4};

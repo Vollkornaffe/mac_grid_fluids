@@ -1,7 +1,6 @@
 use std::mem::swap;
 
 use glam::{mat2, uvec2, vec2, IVec2, UVec2, Vec2, Vec3};
-use rand::Rng;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Cell {
@@ -22,9 +21,6 @@ pub struct Simulation {
 impl Simulation {
     pub fn new(dimensions: UVec2, cell_size: f32, time_step: f32) -> Self {
         assert!(dimensions.element_product() != 0);
-
-        let mut rng = rand::thread_rng();
-        let mut random_float = || rng.gen_range(-1.0..1.);
 
         let pressures = vec![0.; dimensions.element_product() as usize];
 
