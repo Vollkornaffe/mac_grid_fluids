@@ -1,4 +1,4 @@
-use glam::{mat2, vec2, IVec2, UVec2, Vec2, Vec3};
+use glam::{mat2, uvec2, vec2, IVec2, UVec2, Vec2, Vec3};
 use rand::Rng;
 
 #[derive(Debug, Clone, Copy)]
@@ -58,6 +58,7 @@ impl Simulation {
     }
 
     pub fn step(&mut self) {
+        self.boundary();
         self.advect();
         self.project();
     }
@@ -190,6 +191,22 @@ impl Simulation {
 
         self.velocities_x = velocities_x;
         self.velocities_y = velocities_y;
+    }
+
+    fn boundary(&mut self) {
+        for i in 0..self.dimensions.x {
+            let bot = self.velocities_y_idx(uvec2(i, 0));
+            let top = self.velocities_y_idx(uvec2(i, self.dimensions.y));
+            self.velocities_y[top] = 0.;
+            self.velocities_y[bot] = 0.;
+        }
+
+        for j in 0..self.dimensions.y {
+            let left = self.velocities_x_idx(uvec2(0, j));
+            let right = self.velocities_x_idx(uvec2(self.dimensions.x, j));
+            self.velocities_x[left] = 0.;
+            self.velocities_x[right] = 0.;
+        }
     }
 
     fn project(&mut self) {}
