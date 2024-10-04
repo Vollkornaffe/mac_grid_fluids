@@ -43,17 +43,15 @@ impl Simulation {
     }
 
     pub fn cells(&self) -> impl Iterator<Item = Cell> + '_ {
-        (0..self.dimensions.y).flat_map(move |j| {
-            (0..self.dimensions.x).map(move |i| {
-                let position = vec2(i as f32 + 0.5, j as f32 + 0.5) * self.cell_size;
-                let velocity = self.interpolate_velocity(position);
-                let color = Vec3::X;
-                Cell {
-                    position,
-                    velocity,
-                    color,
-                }
-            })
+        self.cell_iter().map(|cell| {
+            let position = (cell.as_vec2() + Vec2::ONE * 0.5) * self.cell_size;
+            let velocity = self.interpolate_velocity(position);
+            let color = Vec3::X * self.pressures[self.pressures_idx(cell)] * 0.001;
+            Cell {
+                position,
+                velocity,
+                color,
+            }
         })
     }
 
@@ -61,6 +59,12 @@ impl Simulation {
         self.boundary();
         self.advect();
         self.project();
+    }
+
+    fn pressures_idx(&self, clamped: UVec2) -> usize {
+        assert!(clamped.x < self.dimensions.x);
+        assert!(clamped.y < self.dimensions.y);
+        (clamped.x + clamped.y * self.dimensions.x) as usize
     }
 
     fn velocities_x_idx(&self, clamped: UVec2) -> usize {
