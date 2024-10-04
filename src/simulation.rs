@@ -1,5 +1,4 @@
 use glam::{mat2, vec2, IVec2, UVec2, Vec2, Vec3};
-use rand::thread_rng;
 use rand::Rng;
 
 #[derive(Debug, Clone, Copy)]
@@ -59,12 +58,6 @@ impl Simulation {
     pub fn step(&mut self) {
         self.advect();
         self.project();
-    }
-
-    fn cell_idx(&self, clamped: UVec2) -> usize {
-        assert!(clamped.x < self.dimensions.x);
-        assert!(clamped.y < self.dimensions.y);
-        (clamped.x + clamped.y * self.dimensions.x) as usize
     }
 
     fn velocities_x_idx(&self, clamped: UVec2) -> usize {

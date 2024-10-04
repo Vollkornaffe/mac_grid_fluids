@@ -8,7 +8,7 @@ use glam::{uvec2, vec4, Vec2, Vec3, Vec4};
 use posh::{gl, Gl};
 use render::{Graphics, Instance};
 use simulation::{Cell, Simulation};
-use tracing::{info, subscriber::set_global_default};
+use tracing::subscriber::set_global_default;
 use tracing_subscriber::FmtSubscriber;
 
 mod render;
