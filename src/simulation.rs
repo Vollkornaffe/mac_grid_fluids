@@ -1,4 +1,6 @@
 use glam::{mat2, vec2, IVec2, UVec2, Vec2, Vec3};
+use rand::thread_rng;
+use rand::Rng;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Cell {
@@ -19,9 +21,16 @@ impl Simulation {
     pub fn new(dimensions: UVec2, cell_size: f32) -> Self {
         assert!(dimensions.element_product() != 0);
 
+        let mut rng = rand::thread_rng();
+        let mut random_float = || rng.gen_range(-1.0..1.);
+
         let pressures = vec![0.; dimensions.element_product() as usize];
-        let velocities_x = vec![1.; ((dimensions.x + 1) * dimensions.y) as usize];
-        let velocities_y = vec![0.; (dimensions.x * (dimensions.y + 1)) as usize];
+
+        let velocities_x_count = ((dimensions.x + 1) * dimensions.y) as usize;
+        let velocities_y_count = (dimensions.x * (dimensions.y + 1)) as usize;
+
+        let velocities_x = (0..velocities_x_count).map(|_| random_float()).collect();
+        let velocities_y = (0..velocities_y_count).map(|_| random_float()).collect();
 
         Self {
             dimensions,
@@ -134,7 +143,7 @@ impl Simulation {
         )
     }
 
-    fn interpolate_velocity(&self, position: Vec2) -> Vec2 {
+    pub fn interpolate_velocity(&self, position: Vec2) -> Vec2 {
         let normalized = position / self.cell_size;
         vec2(
             self.interpolate_velocity_x(normalized),

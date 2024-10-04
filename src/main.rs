@@ -72,6 +72,8 @@ fn main() {
 
         simulation.step();
 
+        cursor_cell.velocity = simulation.interpolate_velocity(cursor_cell.position);
+
         let cell_to_instance = |cell: Cell| Instance::<Gl> {
             model_to_view: glam::Mat4::from_cols(
                 cell.velocity.extend(0.).extend(0.) * simulation.cell_size,
