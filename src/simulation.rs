@@ -192,6 +192,15 @@ impl Simulation {
         self.velocities_y = velocities_y;
     }
 
+    fn is_fluid(&self, normalized: IVec2) -> bool {
+        normalized.x >= 0
+            && normalized.y >= 0
+            && normalized.x < self.dimensions.x as i32
+            && normalized.y < self.dimensions.y as i32
+
+        // TODO: inner solid cells
+    }
+
     fn boundary(&mut self) {
         for i in 0..self.dimensions.x {
             let bot = self.velocities_y_idx(uvec2(i, 0));
@@ -206,6 +215,8 @@ impl Simulation {
             self.velocities_x[left] = 0.;
             self.velocities_x[right] = 0.;
         }
+
+        // TODO: inner solid cells
     }
 
     fn cell_iter(&self) -> impl Iterator<Item = UVec2> + '_ {
@@ -220,5 +231,39 @@ impl Simulation {
         (0..self.dimensions.x).flat_map(|i| (0..=self.dimensions.y).map(move |j| uvec2(i, j)))
     }
 
-    fn project(&mut self) {}
+    fn project(&mut self) {
+        let constants: Vec<f32> = self
+            .cell_iter()
+            .map(|cell| {
+                self.cell_size / self.time_step
+                    * (self.velocities_x[self.velocities_x_idx(cell + UVec2::X)]
+                        - self.velocities_x[self.velocities_x_idx(cell)]
+                        + self.velocities_y[self.velocities_y_idx(cell + UVec2::Y)]
+                        - self.velocities_y[self.velocities_y_idx(cell)])
+            })
+            .collect();
+
+        for _ in 0..10 {
+            self.pressures = self
+                .cell_iter()
+                .map(|cell| {
+                    let neigbors = [IVec2::X, IVec2::NEG_X, IVec2::Y, IVec2::NEG_Y]
+                        .into_iter()
+                        .filter_map(|offset| {
+                            let neighbor = cell.as_ivec2() + offset;
+                            self.is_fluid(neighbor).then_some(neighbor.as_uvec2())
+                        });
+
+                    (neigbors
+                        .clone()
+                        .map(|neighbor| self.pressures[self.pressures_idx(neighbor)])
+                        .sum::<f32>()
+                        - constants[self.pressures_idx(cell)])
+                        / neigbors.count() as f32
+                })
+                .collect()
+        }
+
+        //let pressures = todo!();
+    }
 }
