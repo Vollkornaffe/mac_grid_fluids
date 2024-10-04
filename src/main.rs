@@ -1,12 +1,13 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
+    iter::once,
 };
 
 use glam::{uvec2, vec4, Vec2, Vec3, Vec4};
 use posh::{gl, Gl};
 use render::{Graphics, Instance};
-use simulation::Simulation;
+use simulation::{Cell, Simulation};
 use tracing::{info, subscriber::set_global_default};
 use tracing_subscriber::FmtSubscriber;
 
@@ -57,22 +58,29 @@ fn main() {
 
         simulation.step();
 
+        let cell_to_instance = |cell: Cell| Instance::<Gl> {
+            model_to_view: glam::Mat4::from_cols(
+                cell.velocity.extend(0.).extend(0.) * simulation.cell_size,
+                vec4(-cell.velocity.y, cell.velocity.x, 0., 0.).normalize_or_zero()
+                    * simulation.cell_size,
+                Vec4::Z,
+                (Vec2::splat(2. * simulation.cell_size) + cell.position)
+                    .extend(0.)
+                    .extend(1.),
+            )
+            .into(),
+            color: Vec3::X.into(),
+        };
+
+        let cursor_cell = Cell {
+            position: Vec2::ZERO,
+            velocity: Vec2::Y,
+        };
+
         graphics.instances.set(
-            &simulation
-                .cells()
-                .map(|cell| Instance::<Gl> {
-                    model_to_view: glam::Mat4::from_cols(
-                        cell.velocity.extend(0.).extend(0.) * simulation.cell_size,
-                        vec4(-cell.velocity.y, cell.velocity.x, 0., 0.).normalize_or_zero()
-                            * simulation.cell_size,
-                        Vec4::Z,
-                        (Vec2::splat(2. * simulation.cell_size) + cell.position)
-                            .extend(0.)
-                            .extend(1.),
-                    )
-                    .into(),
-                    color: Vec3::X.into(),
-                })
+            &once(cursor_cell)
+                .chain(simulation.cells())
+                .map(cell_to_instance)
                 .collect::<Vec<_>>(),
         );
 
