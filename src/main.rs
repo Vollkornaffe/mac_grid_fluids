@@ -47,12 +47,26 @@ fn main() {
     let cell_size = 20.;
     let mut simulation = Simulation::new(grid_dimensions, cell_size);
 
+    let cell_offset = Vec2::splat(2. * simulation.cell_size);
+    let mut cursor_cell = Cell {
+        position: Vec2::ZERO,
+        velocity: Vec2::Y,
+        color: Vec3::Y,
+    };
+
     loop {
         for event in event_loop.poll_iter() {
-            use sdl2::event::Event::*;
+            type E = sdl2::event::Event;
 
-            if matches!(event, Quit { .. }) {
-                return;
+            match event {
+                E::MouseMotion { x, y, .. } => {
+                    cursor_cell.position.x = x as f32 - cell_offset.x;
+                    cursor_cell.position.y = (HEIGHT as i32 - y) as f32 - cell_offset.y;
+                }
+                E::Quit { .. } => {
+                    return;
+                }
+                _ => {}
             }
         }
 
@@ -64,17 +78,10 @@ fn main() {
                 vec4(-cell.velocity.y, cell.velocity.x, 0., 0.).normalize_or_zero()
                     * simulation.cell_size,
                 Vec4::Z,
-                (Vec2::splat(2. * simulation.cell_size) + cell.position)
-                    .extend(0.)
-                    .extend(1.),
+                (cell_offset + cell.position).extend(0.).extend(1.),
             )
             .into(),
-            color: Vec3::X.into(),
-        };
-
-        let cursor_cell = Cell {
-            position: Vec2::ZERO,
-            velocity: Vec2::Y,
+            color: cell.color.into(),
         };
 
         graphics.instances.set(

@@ -1,9 +1,10 @@
-use glam::{mat2, uvec2, vec2, IVec2, Mat2, UVec2, Vec2};
+use glam::{mat2, vec2, IVec2, UVec2, Vec2, Vec3};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Cell {
     pub position: Vec2,
     pub velocity: Vec2,
+    pub color: Vec3,
 }
 
 pub struct Simulation {
@@ -36,7 +37,12 @@ impl Simulation {
             (0..self.dimensions.x).map(move |i| {
                 let position = vec2(i as f32 + 0.5, j as f32 + 0.5) * self.cell_size;
                 let velocity = self.interpolate_velocity(position);
-                Cell { position, velocity }
+                let color = Vec3::X;
+                Cell {
+                    position,
+                    velocity,
+                    color,
+                }
             })
         })
     }
