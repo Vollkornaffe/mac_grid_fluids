@@ -1,4 +1,4 @@
-use glam::{vec2, UVec2, Vec2};
+use glam::{mat2, uvec2, vec2, IVec2, Mat2, UVec2, Vec2};
 
 #[derive(Debug)]
 pub struct Cell {
@@ -32,16 +32,10 @@ impl Simulation {
     }
 
     pub fn cells(&self) -> impl Iterator<Item = Cell> + '_ {
-        (0..self.dimensions.y as usize).flat_map(move |j| {
-            (0..self.dimensions.x as usize).map(move |i| {
+        (0..self.dimensions.y).flat_map(move |j| {
+            (0..self.dimensions.x).map(move |i| {
                 let position = vec2(i as f32 + 0.5, j as f32 + 0.5) * self.cell_size;
-                let idx_x = i + j * (self.dimensions.x as usize + 1);
-                let idx_y = i * (self.dimensions.y as usize + 1) + j;
-                let velocity = 0.5
-                    * vec2(
-                        self.velocities_x[idx_x] + self.velocities_x[idx_x + 1],
-                        self.velocities_y[idx_y] + self.velocities_y[idx_y + 1],
-                    );
+                let velocity = self.interpolate_velocity(position);
                 Cell { position, velocity }
             })
         })
@@ -50,6 +44,96 @@ impl Simulation {
     pub fn step(&mut self) {
         self.advect();
         self.project();
+    }
+
+    fn cell_idx(&self, clamped: UVec2) -> usize {
+        assert!(clamped.x < self.dimensions.x);
+        assert!(clamped.y < self.dimensions.y);
+        (clamped.x + clamped.y * self.dimensions.x) as usize
+    }
+
+    fn velocities_x_idx(&self, clamped: UVec2) -> usize {
+        assert!(clamped.x < self.dimensions.x + 1);
+        assert!(clamped.y < self.dimensions.y);
+        (clamped.x + clamped.y * (self.dimensions.x + 1)) as usize
+    }
+
+    fn velocities_y_idx(&self, clamped: UVec2) -> usize {
+        assert!(clamped.x < self.dimensions.x);
+        assert!(clamped.y < self.dimensions.y + 1);
+        (clamped.x * (self.dimensions.y + 1) + clamped.y) as usize
+    }
+
+    fn velocities_x_dimensions(&self) -> UVec2 {
+        self.dimensions + UVec2::X
+    }
+
+    fn velocities_y_dimensions(&self) -> UVec2 {
+        self.dimensions + UVec2::Y
+    }
+
+    fn velocity_x(&self, normalized: IVec2) -> f32 {
+        let clamped = normalized
+            .max(IVec2::ZERO)
+            .as_uvec2()
+            .min(self.velocities_x_dimensions() - UVec2::ONE);
+        self.velocities_x[self.velocities_x_idx(clamped)]
+    }
+
+    fn velocity_y(&self, normalized: IVec2) -> f32 {
+        let clamped = normalized
+            .max(IVec2::ZERO)
+            .as_uvec2()
+            .min(self.velocities_y_dimensions() - UVec2::ONE);
+        self.velocities_y[self.velocities_y_idx(clamped)]
+    }
+
+    fn interpolate_velocity_x(&self, normalized: Vec2) -> f32 {
+        let shifted = normalized - 0.5 * Vec2::Y;
+        let reference = shifted.floor().as_ivec2();
+
+        let Vec2 { x: dx, y: dy } = normalized - reference.as_vec2();
+
+        vec2(1. - dx, dx).dot(
+            mat2(
+                vec2(
+                    self.velocity_x(reference),
+                    self.velocity_x(reference + IVec2::X),
+                ),
+                vec2(
+                    self.velocity_x(reference + IVec2::Y),
+                    self.velocity_x(reference + IVec2::ONE),
+                ),
+            ) * vec2(1. - dy, dy),
+        )
+    }
+
+    fn interpolate_velocity_y(&self, normalized: Vec2) -> f32 {
+        let shifted = normalized - 0.5 * Vec2::X;
+        let reference = shifted.floor().as_ivec2();
+
+        let Vec2 { x: dx, y: dy } = normalized - reference.as_vec2();
+
+        vec2(1. - dx, dx).dot(
+            mat2(
+                vec2(
+                    self.velocity_y(reference),
+                    self.velocity_y(reference + IVec2::X),
+                ),
+                vec2(
+                    self.velocity_y(reference + IVec2::Y),
+                    self.velocity_y(reference + IVec2::ONE),
+                ),
+            ) * vec2(1. - dy, dy),
+        )
+    }
+
+    fn interpolate_velocity(&self, position: Vec2) -> Vec2 {
+        let normalized = position / self.cell_size;
+        vec2(
+            self.interpolate_velocity_x(normalized),
+            self.interpolate_velocity_y(normalized),
+        )
     }
 
     fn advect(&mut self) {}
