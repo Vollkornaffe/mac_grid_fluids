@@ -165,27 +165,22 @@ impl Simulation {
     }
 
     fn advect(&mut self) {
-        let shared_self = &*self;
-        let velocities_x = (0..self.dimensions.y)
-            .flat_map(|j| {
-                (0..=self.dimensions.x).map(move |i| {
-                    let normalized = vec2(i as f32, 0.5 + j as f32);
-                    let velocity = shared_self.interpolate_velocity_with_normalized(normalized);
-                    let lookup =
-                        normalized - shared_self.time_step * velocity / shared_self.cell_size;
-                    shared_self.interpolate_velocity_with_normalized(lookup).x
-                })
+        let velocities_x = self
+            .velocities_x_iter()
+            .map(|UVec2 { x, y }| {
+                let normalized = vec2(x as f32, 0.5 + y as f32);
+                let velocity = self.interpolate_velocity_with_normalized(normalized);
+                let lookup = normalized - self.time_step * velocity / self.cell_size;
+                self.interpolate_velocity_with_normalized(lookup).x
             })
             .collect();
-        let velocities_y = (0..self.dimensions.x)
-            .flat_map(|i| {
-                (0..=shared_self.dimensions.y).map(move |j| {
-                    let normalized = vec2(0.5 + i as f32, j as f32);
-                    let velocity = shared_self.interpolate_velocity_with_normalized(normalized);
-                    let lookup =
-                        normalized - shared_self.time_step * velocity / shared_self.cell_size;
-                    shared_self.interpolate_velocity_with_normalized(lookup).y
-                })
+        let velocities_y = self
+            .velocities_y_iter()
+            .map(|UVec2 { x, y }| {
+                let normalized = vec2(0.5 + x as f32, y as f32);
+                let velocity = self.interpolate_velocity_with_normalized(normalized);
+                let lookup = normalized - self.time_step * velocity / self.cell_size;
+                self.interpolate_velocity_with_normalized(lookup).y
             })
             .collect();
 
@@ -207,6 +202,18 @@ impl Simulation {
             self.velocities_x[left] = 0.;
             self.velocities_x[right] = 0.;
         }
+    }
+
+    fn cell_iter(&self) -> impl Iterator<Item = UVec2> + '_ {
+        (0..self.dimensions.y).flat_map(|j| (0..self.dimensions.x).map(move |i| uvec2(i, j)))
+    }
+
+    fn velocities_x_iter(&self) -> impl Iterator<Item = UVec2> + '_ {
+        (0..self.dimensions.y).flat_map(|j| (0..=self.dimensions.x).map(move |i| uvec2(i, j)))
+    }
+
+    fn velocities_y_iter(&self) -> impl Iterator<Item = UVec2> + '_ {
+        (0..self.dimensions.x).flat_map(|i| (0..=self.dimensions.y).map(move |j| uvec2(i, j)))
     }
 
     fn project(&mut self) {}
