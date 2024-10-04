@@ -100,7 +100,12 @@ impl Simulation {
         let shifted = normalized - 0.5 * Vec2::Y;
         let reference = shifted.floor().as_ivec2();
 
-        let Vec2 { x: dx, y: dy } = normalized - reference.as_vec2();
+        let Vec2 { x: dx, y: dy } = normalized - reference.as_vec2() - 0.5 * Vec2::Y;
+
+        assert!(dx >= 0.);
+        assert!(dx <= 1.);
+        assert!(dy >= 0.);
+        assert!(dy <= 1.);
 
         vec2(1. - dx, dx).dot(
             mat2(
@@ -120,7 +125,12 @@ impl Simulation {
         let shifted = normalized - 0.5 * Vec2::X;
         let reference = shifted.floor().as_ivec2();
 
-        let Vec2 { x: dx, y: dy } = normalized - reference.as_vec2();
+        let Vec2 { x: dx, y: dy } = normalized - reference.as_vec2() - 0.5 * Vec2::X;
+
+        assert!(dx >= 0.);
+        assert!(dx <= 1.);
+        assert!(dy >= 0.);
+        assert!(dy <= 1.);
 
         vec2(1. - dx, dx).dot(
             mat2(
