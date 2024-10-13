@@ -19,6 +19,7 @@ const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
 
 enum VelocityMode {
+    Hide,
     Combined,
     Staggered,
 }
@@ -68,6 +69,9 @@ fn main() {
     let mut velocity_mode = VelocityMode::Combined;
     let mut run_mode = RunMode::Step;
 
+    let mut particles = Vec::new();
+    let mut particles_old = Vec::new();
+
     loop {
         let mut step = false;
         for event in event_loop.poll_iter() {
@@ -89,6 +93,11 @@ fn main() {
                     } else {
                         Vec2::ZERO
                     };
+
+                    if mousestate.right() {
+                        particles.push(cursor_cell.position);
+                        info!(num_particles = particles.len());
+                    }
                 }
                 E::KeyDown {
                     keycode: Some(Keycode::R),
@@ -103,6 +112,13 @@ fn main() {
                     ..
                 } => {
                     run_mode = RunMode::Step;
+                }
+                E::KeyDown {
+                    keycode: Some(Keycode::H),
+                    repeat: false,
+                    ..
+                } => {
+                    velocity_mode = VelocityMode::Hide;
                 }
                 E::KeyDown {
                     keycode: Some(Keycode::C),
@@ -157,14 +173,26 @@ fn main() {
             color: cell.color.into(),
         };
 
+        for particle in &mut particles {
+            *particle += time_step * simulation.interpolate_velocity(*particle);
+        }
+
         let mut instances = vec![cursor_cell];
         match velocity_mode {
+            VelocityMode::Hide => instances.extend(particles.iter().zip(particles_old.iter()).map(
+                |(pos_now, pos_prev)| Cell {
+                    position: *pos_prev,
+                    velocity: (*pos_now - *pos_prev).normalize_or_zero(),
+                    color: Vec3::Z,
+                },
+            )),
             VelocityMode::Combined => instances.extend(simulation.cells()),
             VelocityMode::Staggered => {
                 instances.extend(simulation.velocities_x());
                 instances.extend(simulation.velocities_y());
             }
         }
+
         graphics.instances.set(
             &instances
                 .into_iter()
@@ -174,6 +202,8 @@ fn main() {
 
         graphics.draw().unwrap();
         window.gl_swap_window();
+
+        particles_old = particles.clone();
     }
 }
 
